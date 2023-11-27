@@ -1,137 +1,863 @@
-use sales 
+Procedure 
+----------
 
-select * from sales1
+1) DELIMITER &&
+    create procedure get_details()
+   begin 
+     select * from bank_details;
+    end &&
 
-DELIMITER $$
-create function add_to_col3(a INT)
-returns INT 
-DETERMINISTIC
-BEGIN 
-	DECLARE b int ;
-	set b = a + 10 ;
-	return b ;
-end $$
+   call get_details()
 
-DELIMITER $$
-create function final_profits(profit int , discount int )
-returns int
-Deterministic
-Begin 
-Declare final_profit int ;
-set final_profit = profit - discount ;
-return final_profit;
-end $$
+2) DELIMITER &&
+     CREATE procedure avg_balance1(in har varchar(30))
+   begin
+     select avg(balance) from bank_details where job = har;
+   end &&
 
-select profit, discount  , final_profits(profit, discount) from sales1 ; 
-
-DELIMITER $$
-create function final_profits_real(profit decimal(20,6) , discount decimal(20,6) , sales decimal(20,6) )
-returns int
-Deterministic
-Begin 
-Declare final_profit int ;
-set final_profit = profit - sales * discount ;
-return final_profit;
-end $$
-
-select profit, discount  ,sales ,  final_profits_real(profit, discount,sales) from sales1 ; 
-
-select add_to_col3(15)
-
-select * from sales1
-
-select quantity , add_to_col3(quantity ) from sales1
+   call avg_balance1('management')
 
 
+views:
+-----
+
+-> we will use view table because in normal table there will be many columns which we donot use so we will create view table with our specified columns from main table
+
+1. create view bank_view as select age, job, education, balance from bank_details
 
 
-DELIMITER $$
-create function int_to_str(a INT)
-returns varchar
-DETERMINISTIC
-BEGIN 
-	DECLARE b varchar ;
-	set b = a ;
-    return b 
-end $$
+Bulk Upload COnstraint:
+----------------------
+
+-> to insert large data in mysql we can use this process
+
+   load data infile
+   'D:\AttributeDataSet.csv'
+   into table dress
+   fields terminated by ','
+   enclosed by '"'
+   lines terminated by '\n'
+   ignore 1 rows;
+
+-> if it is not working then execute this line and after execute above lines
+   SET SESSION sql_mode = ''
 
 
-DELIMITER &&
-create function int_to_str (a int)
-returns varchar(30)
-DETERMINISTIC
-begin
-declare b varchar(30);
-set b = a;
-return b;
-end&&
+constraint : check 
+------------------
+-> when we are inserting the values but we must apply one condtion on column then we have to use check constraint 
+     ex - test_salary int check (test_salary > 10000));  -> here we are applying one condtion that the value must be more than 10000 to insert
 
-select int_to_str(45) 
+Converting varchar to date:
+---------------------------
+-> to convert varchar to date we will use str_to_date() function
 
-select * from sales1 
+ ex - select str_to_date(order_date,'%m/%d/%Y') from sales1
+   
+-> Y must be capital
 
-select quantity, int_to_str(quantity) from sales1 ; 
+ here, str_to_date - function
+       order_date  - column name
+       '%m/%d/%Y'  - the order what is present in my column, first month then day then year but o/p will be yyyy-MM-dd
+       sales1      - table name 
 
-select max(sales) , min(sales) from sales1 
+adding column after any specific column:
+----------------------------------------
+-> we know that when we add column it will add at last of all the columns but if we want to add column beside to any column specifically 
+
+ex - alter table sales1 add column order_date_new date after order_date
+
+here, we are adding the order_date_new column after order_date column
+
+updating the column:
+--------------------
+ex - update sales1 set order_date_new = str_to_date(order_date,'%m/%d/%Y')
+
+Some Funtions on time and date:
+-------------------------------
+1.  select now();   -> it gives present date and time
+2.  select curdate(); -> it gives present date
+3.  select current_date(); -> it gives present date
+4.  select current_time();  -> it gives present time
+5.  select current_timestamp(); -> it gives present date and time
+6.  select current_user();   -> it gives root name
+7.  select curtime();   -> it gives present time
+8.  select date_sub();  -> if we want to do operations like we want the information from specific date
+9.  select date_add();
+10. select date_format();
+11. select datediff();
+12. select year(now());
+13. select day(now());
+14. select month(now());
+15. select date(now());
+16. select dayname('2022-09-20 21:10:30')
 
 
-1  - 100 - super affordable product 
-100-300 - affordable 
-300 - 600 - moderate price 
-600 + - expensive 
+ex : 1. select * from sales1 where ship_date_new < date_sub(now() , interval 1 week)  -> it gives entire date from first but it will not give the data of last 1 week 
+
+   -> here we can keep day, month, year in the place of week
+
+changing the datatype of column:
+--------------------------------
+-> modifying the column datatype using modify function.
+
+ EX - alter table sales1 modify column year datetime
+ here, modify - function
+       year - column name 
+
+convert date into year, month, day in seperate columns:
+-------------------------------------------------------
+1. alter table sales1 add column `year1` int after order_date_new; 
+2. alter table sales1 add column `day` int after year1; 
+3. alter table sales1 add column `month` int after day; 
+
+4. update sales1 set year1 = year(order_date_new);
+5. update sales1 set `day` = day(order_date_new);
+6. update sales1 set `month` = month(order_date_new);
+7. select * from sales1;
+
+using if condition:
+-------------------
+1. select order_id ,discount , if(discount > 0 ,'yes' , 'no') as discount_flag from sales1;
+2. alter table sales1 add column discount_flag varchar(20) after discount;
+3. update sales1 set discount_flag = if(discount> 0 , 'yes', 'no')
 
 
-DELIMITER &&
-create function mark_sales2(sales int ) 
-returns varchar(30)
-DETERMINISTIC
-begin 
-declare flag_sales varchar(30); 
-if sales  <= 100  then 
-	set flag_sales = "super affordable product" ;
-elseif sales > 100 and sales < 300 then 
-	set flag_sales = "affordable" ;
-elseif sales >300 and sales < 600 then 
-	set flag_sales = "moderate price" ;
-else 
-	set flag_sales = "expensive" ;
-end if ;
-return flag_sales;
+Create our own Function:
+------------------------
+
+1. DELIMITER &&
+   create function add_int(a int)
+   returns int
+   deterministic
+   begin 
+      declare b int;
+      set b = a + 10;
+      return b;
+   end &&
+
+   here, add_int - function name accepts int 
+         DELIMITER must be in capital only 
+
+   -> calling this function - select sales, add_int(sales) as sales_new from sales1;
+
+2. DELIMITER &&
+   create function final_profit(profit int, discount int)
+   returns int 
+   deterministic
+   begin
+      declare final_profit int;
+      set final_profit = profit - discount;
+      return final_profit;
+   end &&
+
+   -> select profit , discount, final_profit(profit,discount) as final_profit from sales1;
+
+
+write a function to change the column datatype int to varchar:
+--------------------------------------------------------------
+1. DELIMITER &&
+   create function int_to_var( a int)
+   returns varchar(20)
+   deterministic
+   begin
+     declare b varchar(20);
+     set b = a;
+     return b;
+   end &&
+
+  -> select year1, int_to_var(year1) from sales1;
+
+create a function for sales:
+----------------------------
+condition : 1  - 100 - super affordable product 
+            100-300 - affordable 
+            300 - 600 - moderate price 
+            600 + - expensive 
+
+ DELIMITER &&
+ create function flag_sales(sales int)
+ returns varchar(30)
+ deterministic
+ begin 
+   declare flag_sales varchar(30);
+   if sales< 100 then
+      set flag_sales = "super affordable product";
+   elseif sales >=100 and sales < 300 then
+      set flag_sales = "affordable";
+   elseif sales >= 300 and sales < 600 then
+      set flag_sales = "moderate price";
+   else
+      set flag_sales= "expensive";
+   end if;
+   return flag_sales;
 end &&
 
-
-select mark_sales2(100)
-
-select sales , mark_sales2(sales ) from sales1 ; 
+-> select sales , flag_sales(sales) from sales1 order by sales;
 
 
+How to create Loop:
+-------------------
 
-create table loop_table(val int)
+1. set @var = 10;
+   generate_data : loop
+   set @var = @var + 1
+   if @var = 100 then leave generate_data;
+   end if;
+   end loop generate_data;
+
+2. create table loop_table(val int) ;
+
+   DELIMITER &&
+   create procedure insert_data()
+   begin
+   set @var = 10;
+   generate_data : loop
+   insert into loop_table values (@var);
+   set @var = @var + 1;
+   if @var = 100 then leave generate_data;
+   end if;
+   end loop generate_data;
+   end &&
+
+   call insert_data();
+   select * from loop_table;
+
+Task:
+-----
+1 . Create a loop for a table to insert a record into a tale for two columns in first coumn you have to inset a data ranging from 1 to 100 and in second column you hvae to inset a square         of the first column 
+
+sol : create table squares (
+           number int,
+           `values` int
+      );
+
+      DELIMITER &&
+      create procedure sqr_root()
+      begin
+      set @var = 1;
+      set @val = 0;
+      generate_data : loop
+      set @val = @var * @var;
+      insert into squares values(@var, @val);
+      set @var = @var + 1;
+      if @var = 100 then leave generate_data;
+      end if;
+      end loop generate_data;
+      end &&
+
+      call sqr_root;
+
+      select * from squares;
+
+2. create a user defined function to find out a date differences in number of days 
+3. create a UDF to find out a log base 10 of any given number 
+4. create a UDF which will be able to check a total number of records avaible in your table 
+5. create a procedure to find out  5th highest profit in your sales table you dont have to use rank and windowing function 
+
+How to create primary key and foreign key:
+------------------------------------------
+primary key:
+------------
+1. create table if not exists ineuron(
+      course_id int not null primary key unique,
+      course_name varchar(30),
+      course_status varchar(30),
+      no_of_enroll int
+   );
+
+foreign key:
+------------
+1. create table if not exists students_ineuron(
+       student_id int,
+       course_name varchar(30),
+       student_mail varchar(30),
+       student_status varchar(30),
+       course_id1 int,
+       foreign key(course_id1) references ineuron(course_id)
+   );
+
+drop primary key by using alter:
+--------------------------------
+-> alter table harish drop primary key;
+
+add primary key by using alter:
+-------------------------------
+-> alter table ineuron add constraint primary key(course_id, course_name);
+
+to delete all the rows and columns:
+-----------------------------------
+-> delete from ineuron;
+
+to delete the table:
+--------------------
+-> drop table ineuron;
+
+Delete Cascade:
+---------------
+-> if we are not using the delete cascade then we cannot delete the row from parent table when the child table is linked with that.
+-> if we use delete cascade in child table then we can delete the rows from parent table if there is any link to child table also.
+
+ex - 1. create table if not exists child(
+          id int ,
+          parent_id int ,
+          foreign key (parent_id) references parent(id) on delete cascade
+         );  -> this is child table
+ 
+Update Cascade:
+---------------
+-> if we are not using the update cascade then we cannot update the row from parent table when the child table is linked with that.
+-> if we use update cascade in child table then we can update the rows from parent table if there is any link to child table also.
 
 
-Delimiter $$
-create procedure insert_data()
-Begin
-set @var  = 10 ;
-generate_data : loop
-insert into loop_table values (@var);
-set @var = @var + 1  ;
-if @var  = 100 then 
-	leave generate_data;
-end if ;
-end loop generate_data;
-End $$
-
-call insert_data()
-
-select * from loop_table
+ex - 1. create table child (
+           id int ,
+           parent_id int ,
+           foreign key (parent_id) references parent(id) on update cascade );
 
 
+distinct keyword using group by:
+--------------------------------
+1. select count(distinct student_batch) from ineuron_students ;
 
-Task 
-	1 . Create a loop for a table to insert a record into a tale for two columns in first coumn you have to inset a data ranging from 1 to 100 and in second column you hvae to inset a square of the first column 
-	2 . create a user defined function to find out a date differences in number of days 
-    3 . create a UDF to find out a log base 10 of any given number 
-    4 . create a UDF which will be able to check a total number of records avaible in your table 
-    5 . create a procedure to find out  5th highest profit in your sales table you dont have to use rank and windowing function 
+
+writing a query inside a query:
+-------------------------------
+-> select * from ineuron_students where students_marks in (select max(students_marks) from ineuron_students where student_batch = 'fsda');
+
+limit:
+------
+1. select *  from ineuron_students where student_batch='fsda' order by students_marks DESC limit 2; -> it gives top 2
+2. select * from ineuron_students where student_batch = 'fsda' order by students_marks desc limit 1,2; -> it starts from 1 and then it gives 2 values
+3. select * from ineuron_students where student_batch = 'fsda' order by students_marks desc limit 0,3; -> it starts from 0 and then it gives 3 rows
+
+multiple queries in same query:
+-------------------------------
+1. select * from ineuron_students where students_marks =(
+   select min(students_marks) from 
+   (select students_marks from ineuron_students 
+   where student_batch ="fsda"
+   order by students_marks desc
+   limit 3 ) as top);
+
+
+row_number():
+-------------
+-> it gives the numbers from 1 to last. it doesnt repeat the numbers.
+
+1. select student_id, student_batch, student_name, student_stream, students_marks, student_mail_id, 
+      row_number() over(order by students_marks) as 'row_number' from ineuron_students;
+   -> it gives numbers from 1 to last for all the rows
+
+2. select student_id, student_batch, student_name, student_stream, students_marks, student_mail_id, 
+   row_number() over(partition by student_batch order by students_marks) as 'row_number' from ineuron_students;
+  
+3. if i want only 1st rank from all branches ->
+   select * from (select student_id, student_batch, student_name, student_stream, students_marks, student_mail_id, 
+      row_number() over(partition by student_batch order by students_marks desc) as 'row_num' from ineuron_students) as test where row_num = 1;
     
+rank():
+------
+-> it gives ranks from first to last but it repeats the numbers, if we are finding the scores of students from highest to lowest then if any 2 students got same marks then it gives same rank or numbers for 2 students ex - 1,1 and then it doesnt give 2nd rank and it gives 3rd rank.
+
+1. select student_id, student_batch, student_name, student_stream, students_marks, student_mail_id, 
+   row_number() over(order by students_marks) as 'row_number', rank() over(order by students_marks) as rank_numbers from ineuron_students;
+
+2. select student_id, student_batch, student_name, student_stream, students_marks, student_mail_id, 
+   row_number() over(partition by student_batch order by students_marks) as 'row_number', rank() over(partition by student_batch order by students_marks) as                  rank_numbers from ineuron_students;
+
+3. select * from (select student_id, student_batch, student_name, student_stream, students_marks, student_mail_id, 
+   row_number() over(partition by student_batch order by students_marks desc) as 'row_num', 
+   rank() over(partition by student_batch order by students_marks desc) as rank_numbers
+   from ineuron_students) as test where rank_numbers = 1;
+
+dense_rank():
+------------
+-> it gives ranks from first to last but it doesnt repeats the numbers, if we are finding the scores of students from highest to lowest then if any 2 students got same marks then it gives same rank or numbers for 2 students ex - 1,1 and then it doesnt skips 2nd rank as rank.
+
+1. select * from (select student_id, student_batch, student_name, student_stream, students_marks, student_mail_id, 
+   row_number() over(partition by student_batch order by students_marks desc) as 'row_num', 
+   rank() over(partition by student_batch order by students_marks desc) as rank_numbers,
+   dense_rank() over(partition by student_batch order by students_marks desc) as dense_num
+   from ineuron_students) as test where dense_num = 2;
+
+Partition:
+----------
+-> it is used to get the output fastly by dividing the table into seperate tables 
+
+partition by range:
+-------------------
+1. create table ineuron_course(
+      course_name varchar(50) ,
+      course_id int(10) , 
+      course_title varchar(60),
+      corse_desc varchar(60),
+      launch_date date,
+      course_fee int,
+      course_mentor varchar(60),
+      course_launch_year int)
+      partition by range(course_launch_year)(
+      partition p0 values less than (2019),
+      partition p1 values less than (2020),
+      partition p2 values less than (2021),
+      partition p3 values less than (2022),
+      partition p4 values less than (2023));
+
+-> here we have done partition on course_launch_year
+
+partition information:
+---------------------
+-> we can get partition table names, how many rows present by using this line
+   select partition_name, table_name, table_rows from information_schema.partitions where table_name = 'ineuron_course';
+
+partition by hash:
+------------------
+-> it will be stored by any hash function(it will create own formulae to store)
+1. create table ineuron_courses4(
+     course_name varchar(50),
+     course_id int(10),
+     course_title varchar(60),
+     course_desc varchar(80),
+     launch_date date,
+     course_fee int,
+     course_mentor varchar(60),
+     course_launch_year int)
+     partition by hash(course_launch_year)
+     partitions 10;
+
+   select partition_name , table_name , table_rows from information_schema.partitions where table_name = 'ineuron_courses4'
+
+partition by key:
+-----------------
+-> it will be stored by primary keys, foreign key etc--. 
+-> it is also uses hash function but it is more complex
+-> here it generates a uniques id for every primary key. we can get it by using MD5 algorithm
+   ex - SELECT MD5(1015) -> ans : 298923c8190045e91288b430794814c4, like this it generates a unique id 
+
+1. create table ineuron_courses5(
+     course_name varchar(50),
+     course_id int(10) primary key ,
+     course_title varchar(60),
+     course_desc varchar(80),
+     launch_date date,
+     course_fee int,
+     course_mentor varchar(60),
+     course_launch_year int)
+     partition by key()
+     partitions 10;
+
+  select partition_name , table_name , table_rows from information_schema.partitions where table_name = 'ineuron_courses5';
+
+partition by list:
+------------------
+-> it is same as range
+
+1. create table ineuron_courses6(
+     course_name varchar(50) ,
+     course_id int(10) ,
+     course_title varchar(60),
+     course_desc varchar(80),
+     launch_date date,
+     course_fee int,
+     course_mentor varchar(60),
+     course_launch_year int)
+     partition by list(course_launch_year)(
+     partition p0 values in(2019,2020),
+     partition p1 values in(2022,2021)
+   );
+
+-> select partition_name, table_name, table_rows from information_schema.partitions where table_name = 'ineuron_courses6';
+
+partition by range columns:
+---------------------------
+-> here it is same as range but in range it takes only one column but here we can pass many columns
+
+1. create table ineuron_courses8(
+      course_name varchar(50) ,
+      course_id int(10) ,
+      course_title varchar(60),
+      course_desc varchar(80),
+      launch_date date,
+      course_fee int,
+      course_mentor varchar(60),
+      course_launch_year int)
+      partition by range columns(course_name ,course_id,course_launch_year )(
+      partition p0 values less than ('aiops',105,2019),
+      partition p1 values less than ('fsds' ,110,2021),
+      partition p2 values less than ('MERN',116,2023)
+   )
+  
+   select partition_name , table_name , table_rows from information_schema.partitions where table_name = 'ineuron_courses8'
+
+-> select ('aiops',105,2019) < ('fsds' ,110,2021); ans is 1(true)
+-> select ('a') > ('b'); ans is 0(false)
+
+partition by list columns:
+--------------------------
+-> it is also same as range columns
+
+1. create table ineuron_courses9(
+     course_name varchar(50) ,
+     course_id int(10) ,
+     course_title varchar(60),
+     course_desc varchar(80),
+     launch_date date,
+     course_fee int,
+     course_mentor varchar(60),
+     course_launch_year int)
+     partition by list columns(course_name)(
+     partition p0 values  in('aiops','data analytics','Dl','RL'),
+     partition p1 values  in('fsds' ,'big data','blockchain'),
+     partition p2 values  in('MERN','java','interview prep','fsda')
+   )
+
+subpartitions:
+--------------
+1. create table ineuron_courses10(
+     course_name varchar(50),
+     course_id int(10),
+     course_title varchar(60),
+     course_desc varchar(80),
+     launch_date date,
+     course_fee int,
+     course_mentor varchar(60),
+     course_launch_year int)
+     partition by range(course_launch_year)
+     subpartition by hash(course_launch_year)
+     subpartitions 5 (
+     partition p0 values less than (2019) ,
+     partition p1 values less than (2020) ,
+     partition p2 values less than (2021) ,
+     partition p3 values less than (2022) 
+  );
+
+
+inner join:
+----------
+-> here we will create 2 tables but we will not declare any primary key and foreign key in tables just we have to create tables.
+-> an INNER JOIN is a type of join that combines rows from two or more tables based on a related column between them. 
+-> It retrieves only the rows that have matching values in both tables according to the specified join condition.
+-> we will use on keyword here in entire joins
+
+EX - select c.course_id, c.course_name, c.course_desc, s.student_id, s.student_name, s.student_course_id, s.student_mobile from course c inner join student s on course_id =     student_course_id;
+
+
+Left join:
+----------
+-> here we will create 2 tables but we will not declare any primary key and foreign key in tables just we have to create tables.
+-> , a LEFT JOIN (or LEFT OUTER JOIN) is a type of join that combines rows from two or more tables based on a related column between them, while including all the rows from the left (first) table. 
+-> If a row in the left table does not have a matching row in the right (second) table, NULL values are returned for columns from the right table.
+
+EX -> 1. select c.course_id, c.course_name, c.course_desc, s.student_id, s.student_name, s.student_course_id, s.student_mobile from course c left join student s 
+         on course_id = student_course_id;  
+      2. select c.course_id, c.course_name, c.course_desc, s.student_id, s.student_name, s.student_course_id, s.student_mobile from course c left join student s 
+         on course_id = student_course_id where s.student_id is null;
+
+
+Right join:
+-----------
+-> a RIGHT JOIN (or RIGHT OUTER JOIN) is a type of join that combines rows from two or more tables based on a related column between them, while including all the rows from the right      (second) table.
+-> If a row in the right table does not have a matching row in the left (first) table, NULL values are returned for columns from the left table.
+
+EX -> 1. select c.course_id, c.course_name, c.course_desc, s.student_id, s.student_name, s.student_course_id, s.student_mobile from course c right join student s 
+         on course_id = student_course_id; 
+      2. select c.course_id, c.course_name, c.course_desc, s.student_id, s.student_name, s.student_course_id, s.student_mobile from course c right join student s 
+         on course_id = student_course_id where course_id is null; 
+
+cross join:
+-----------
+-> a CROSS JOIN is a type of join that combines each row from one table with every row from another table, resulting in a Cartesian product of the rows from both tables. 
+-> Essentially, a CROSS JOIN produces a result set with a number of rows equal to the product of the number of rows in the two joined tables.
+-> we will get more no.of records when we use cross join
+
+EX -> 1. select c.course_id, c.course_name, c.course_desc, s.student_id, s.student_name, s.student_course_id, s.student_mobile from course c cross join student s; 
+
+
+indexing:
+---------
+-> Indexing in SQL is a technique used to optimize and speed up the retrieval of rows from a database table.
+-> it stores the values by using binary tree algorithm so the retrieval of rows will be very fast.
+->  by using this line we can get all the details of that table of indexing.
+       show index from table_name;
+
+Ex: 1. create table if not exists course1 (
+          course_id int ,
+          course_name varchar(50),
+          course_desc varchar(60),
+          course_tag varchar(50),
+          index(course_id)
+       );
+
+    2. create table if not exists course4 (
+          course_id int ,
+          course_name varchar(50),
+          course_desc varchar(60),
+          course_tag varchar(50),
+          index(course_desc,course_name,course_tag)
+       );  -> we can apply indexing for more than 1 columns also
+
+to get the index information of a table:
+---------------------------------------
+-> show index from table_name;
+
+
+Explain:
+--------
+-> EXPLAIN ANALYZE select * from course4 where  course_id = 106 or course_name = 'fsds';
+-> EXPLAIN is a SQL command that provides information about the execution plan of a SQL statement without actually executing it. It shows the steps the database engine plans to take to    execute the query.
+    Explain Select * from course4 where course_id = 106 or course_name = 'fsds'
+
+Analyze:
+--------
+-> ANALYZE is an additional option for EXPLAIN that executes the query and collects actual execution statistics (e.g., execution time, row counts, etc.) along with the query plan.
+    EX - analyze table course4
+
+
+Index:
+-----
+1. An index is a database structure used to speed up data retrieval operations, such as SELECT queries.
+2. It can be created on one or more columns of a table.
+3. It does not enforce uniqueness for the indexed columns, meaning duplicate values are allowed in the indexed columns.
+4. Multiple rows can have the same value in the indexed column(s).
+
+unique index:
+-------------
+1. create table if not exists course6 (
+      course_id int ,
+      course_name varchar(50),
+      course_desc varchar(60),
+      course_tag varchar(50),
+      unique index(course_desc,course_name)
+  );
+
+  show index from course6;
+
+1. A unique index is a specific type of index that enforces uniqueness for the indexed columns.
+2. It can be created on one or more columns of a table.
+3. It ensures that each value in the indexed column(s) is unique across the table; no two rows can have the same combination of values for the indexed columns.
+4. If a unique index is defined on multiple columns, the combination of values in those columns must be unique for each row.
+
+Union:
+-----
+->  UNION operator is used to combine the result sets of two or more SELECT statements into a single result set. 
+-> it doesnt prints duplicate rows
+
+1. select course_id, course_name from course 
+     union
+   select student_id, student_name from student;
+
+Union all:
+----------
+-> it repeats the duplicates also
+
+1. select course_id, course_name from course 
+     union all
+   select student_id, student_name from student;
+
+
+Common Table Expression (CTE):
+------------------------------
+-> CTE stands for Common Table Expression in SQL. 
+-> It's a named temporary result set that you can reference within a SELECT, INSERT, UPDATE, or DELETE statement.
+-> CTEs are useful for simplifying complex queries, breaking down a large query into smaller, more manageable parts, and making queries more readable and maintainable.
+-> we will use cte for recursion also
+   Ex - with recursive sample_cte as
+
+1. with sample_cte as
+     (select * from course where course_id in (101, 102, 103))
+     select * from sample_cte where course_tag = 'java';
+
+2. with cross_out as 
+     (select c.course_id, c.course_name, course_tag, s.student_id, s.student_name, s.student_course_id from course c cross join student s)
+     select course_id , course_name ,student_id from cross_out where student_id = 301
+
+Triggers:
+---------
+-> triggers are special types of stored procedures that are automatically executed (or "triggered") in response to specific events or actions occurring within a database.
+-> Triggers are defined to automatically respond to data modifications (insert, update, delete) or database events (such as when a table is created, altered, or dropped)
+
+table create:
+-------------
+1. create table course2(
+     course_id int, 
+     course_desc varchar(50),
+     course_mentor varchar(60),
+     course_price int,
+     create_date date, 
+     user_info varchar(50));
+
+creating trigger:
+-----------------
+1. delimiter &&
+     create trigger before_insert
+     before insert on course2 for each row 
+   begin 
+     set new.create_date = sysdate();
+     set new.user_info = user();
+   end &&
+
+-> insert into course2(course_id, course_desc,course_mentor,course_price) values(1, 'Harish', 'sudhanshu', 4000);
+
+2. delimiter &&
+     create trigger insert_before
+     before insert on  test1 for each row
+   begin 
+     insert into test2 values("XYZ", current_date(), 1);
+     insert into test3 values("XYZ", current_date(),1);
+   end &&
+
+   -> insert into test1 values("Harish",current_date(), 1);
+
+3. delimiter &&
+     create trigger update_others
+     after insert on test1 for each row
+   begin
+     update test2 set c1 = 'abc' where c1 = 'xyz';
+     delete from test3 where c1 = 'xyz';
+   end &&
+
+4. delimiter &&
+     create trigger to_delete_others_before
+     before delete on test11 for each row
+   begin
+     insert into test12(c1,c2,c3) values(old.c1, old.c2, old.c3);
+   end &&
+   -> here old means what we are the values present in old table that only will be inserted
+
+drop trigger:
+-------------
+-> if we want to drop the trigger we have to use this line 
+     drop trigger trigger_name;
+
+
+CASES:
+------
+1. select * ,
+    case 
+	when course_name = 'fsda' then sysdate()
+        when course_name = 'fsds' then system_user()
+        else "this is not your batch"
+    end as statement 
+   from ineuron_course
+
+2. select * ,
+     case 
+	when length(course_name) = 4  then "len 4"
+        when length(course_name)= 2  then "len 2"
+        else "other lenght"
+     end as statement 
+   from ineuron_course
+
+3. update ineuron_course set course_name = case 
+   when course_name = 'RL' then 'reinforcement learing'
+   when course_name = 'dl' then 'deep learning'
+   end 
+
+Normalization:
+--------------
+-> Normalization in the context of databases and SQL refers to a technique used to organize and structure a database to minimize redundancy and dependency by organizing data into separate tables based on their logical relationships. 
+-> The main goals of normalization are to reduce data redundancy, improve data consistency, and avoid update anomalies.
+-> Normalization involves breaking down a large table into smaller, more manageable tables and defining relationships between them. 
+-> This is achieved by organizing the data into multiple tables, each with a specific purpose and related to others through defined relationships.
+
+1. First Normal Form (1NF):
+---------------------------
+-> all the records in the table should be unique
+-> Each table cell should contain only 1 value
+
+2. Second Normal Form (2NF):
+---------------------------
+-> apply 1NF
+-> single column primary key does not functionally depend on any subset of candidate key.
+-> w ehave to use only primary key we must not use composite key.
+
+3. Third Normal Form (3NF):
+---------------------------
+-> Apply 2NF
+-> It should not have any kind of transitive functional dependencies between non key columns
+
+PIVOT:
+------
+-> a "pivot table" refers to a technique used to transform or reorganize data in a tabular format. 
+-> The pivot operation involves rotating rows into columns, summarizing data, and creating a new table based on the desired aggregation functions.
+
+-> learn more about pivot
+
+
+-- sql date functions
+---------------------
+
+-- GET CURRENT DATE
+SELECT CURRENT_DATE;
+
+-- GET CURRENT TIME
+SELECT CURRENT_TIMESTAMP;
+
+-- GET CURRENT DATE
+SELECT CURRENT_TIME;
+
+-- CONVERT TIMEZONE
+SELECT CONVERT_TIMEZONE('UTC',CURRENT_TIMESTAMP) AS UTC_TIMEZONE;
+
+-- CONVERT DATE TO SUBSEQUENT 4 MONTHS AHEAD
+SELECT TO_CHAR(ADD_MONTHS(CURRENT_DATE,4),'DD-MM-YYYY') as DATE_AFTER_4_MONTHS;
+
+-- 3 MONTHS BACK DATE
+SELECT TO_CHAR(ADD_MONTHS(CURRENT_DATE,-3),'DD-MM-YYYY') as DATE_BEFORE_3_MONTHS;
+
+-- GET YR FROM DATE
+SELECT DATE_TRUNC('YEAR',CURRENT_DATE) AS YR_FROM_DATE;
+
+-- GET MTH FROM DATE
+SELECT DATE_TRUNC('MONTH',CURRENT_DATE) AS MTH_FROM_DATE;
+
+-- GET DAY FROM DATE
+SELECT DATE_TRUNC('DAY',CURRENT_DATE) AS DAY_FROM_DATE;
+
+-- GET LAST DAY OF current MONTH
+select last_day(current_date) as last_day_curr_month;
+
+-- GET LAST DAY OF PREVIOUS MONTH
+SELECT LAST_DAY(CURRENT_DATE - INTERVAL '1 MONTH') AS LAST_DAY_PREV_MNTH;
+
+SELECT LAST_DAY(CURRENT_DATE - INTERVAL '2 MONTH') + INTERVAL '1 DAY' AS FIRST_DAY;
+
+SELECT QUARTER(CURRENT_DATE) AS QTR;
+
+SELECT EXTRACT(YEAR FROM CURRENT_DATE) AS YR;
+SELECT EXTRACT(MONTH FROM CURRENT_DATE) AS MTH;
+SELECT EXTRACT(DAY FROM CURRENT_DATE) AS DAY;
+
+select QUARTER(to_date('1993-08-17'));
+
+SELECT TO_DATE('1993-08-17') AS DATE;
+
+
+SELECT ADD_MONTHS(CURRENT_DATE,-3) AS DATE_3_MNTHS_BACK;
+SELECT ADD_MONTHS(CURRENT_DATE,5) AS DATE_5_MNTHS_AHEAD;
+
+select datediff('day', '2022-06-01',CURRENT_DATE);
+select datediff('MONTH', '2022-06-01',CURRENT_DATE);
+select datediff('YEAR', '2014-06-01',CURRENT_DATE);
+
+select dateadd('day',-23,'2022-06-01');
+select dateadd('month',-2,'2022-06-01');
+select dateadd('year',-5,'2022-06-01');
+
+select WEEK(CURRENT_DATE);
+select MONTH(CURRENT_DATE);
+select YEAR(CURRENT_DATE);
+
+
+
+select datediff('MONTH', '2022-06-01',CURRENT_DATE);
+select datediff('YEAR', '2014-06-01',CURRENT_DATE);
+
+SELECT DATE_TRUNC('DAY',CURRENT_DATE) AS DAY_FROM_DATE;
+
+Interview Questions:
+--------------------
+-> what is the diff between where and having?
+-> How many rows we can download at a time in snowflake? 100mb , 320000rows
+-> diff b/n char, string, varchar 
+-> what is the order of execution in sql
